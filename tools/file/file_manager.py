@@ -1,4 +1,5 @@
 import os
+import json
 
 def get_git_project_root(current_path: str) -> str:
     """Find the root path of current github project
@@ -21,3 +22,16 @@ def get_git_project_root(current_path: str) -> str:
             return None  # Or raise an error if a root must be found
         current_path = parent_path
 
+def import_json_to_dict(json_dir: str) -> dict:
+    """ import json file as a python dictionary
+    Args
+        str: json file path
+    Return:
+        dict: dictionary of json info
+    """
+    with open(json_dir, 'r') as f:
+        return json.load(f)
+
+def export_dict_to_json():
+    # TO-DO
+    pass
