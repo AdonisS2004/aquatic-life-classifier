@@ -4,15 +4,14 @@
 
 import os
 
-from ..tools.data.data_fetch import download_kaggle_datasets
-from ..tools.data.data_process import (
+from .utils.tools.data.data_fetch import download_kaggle_datasets
+from .utils.tools.data.data_process import (
     create_data_file_structure, 
-    process_collection,
-    process_raw
+    process_collection
 )
-from ..tools.file.file_manager import (
-    get_git_project_root,
+from .utils.tools.file.file_manager import (
     import_json_to_dict,
+    get_git_project_root
 )
 
 #################
@@ -47,20 +46,26 @@ def generate_data(data_config_path: str) -> dict:
         6. Document data.
     """
     # import data config
+    print(f'importing data_config json to a dictionary')
     data_args = import_json_to_dict(data_config_path)
+    print(f'finished importing data_config json')    
 
     # create data path; grab key data paths
-    data_folder_path = create_data_file_structure(ROOT, data_args["collections"])
+    data_folder_path = create_data_file_structure(ROOT)
     raw_path = os.path.join(data_folder_path, "raw")
     splits_path = os.path.join(data_folder_path, "splits")
     collections_path = os.path.join(data_folder_path, "collections")
 
     # download data
+    print(f'downloading kaggle dataset')
     download_kaggle_datasets(data_args["datasets"]["kaggle"], collections_path, unzip_data)
+    print(f'finished downloading')
 
     # process each collection
+    print(f'processing collections')
     for collection in data_args["collections"]:
-        process_collection(collection, data_folder_path, raw_path)
+        print(f'Processing: {collection}')
+        process_collection(collection, collections_path, raw_path)
+    print(f'finished processing collections')
+def process_data():
     pass
-
-

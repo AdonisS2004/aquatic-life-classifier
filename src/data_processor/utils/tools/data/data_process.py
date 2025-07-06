@@ -1,11 +1,10 @@
 import os
 import shutil
 
-from ..file.file_manager import get_git_project_root
-from ..image.image_process import (
-    image_normalize,
-    image_resize
-)
+# from ..image.image_process import (
+#     image_normalize,
+#     image_resize
+# )
 
 def create_data_file_structure(path_dir: str) -> str:
     """ Recursively creates data file structure for ML purposes
@@ -49,25 +48,29 @@ def process_collection(collection: str, collections_path:str, raw_path: str) -> 
         """
         id_no = 1 # starting ID number for image
         for directory in os.scandir(path):
-            if directory.is_dir:
+            if directory.is_dir():
                 yield from recur_helper(directory_name + "_" + directory.name, directory.path)
             else:  
                 yield (directory_name, directory.path, id_no)
                 id_no += 1
 
-    collection_path = os.path.join(collections_path, collection)
+    path_to_collection = os.path.join(collections_path, collection)
 
     # check path existence, raise error otherwise
     if not os.path.isdir(collections_path):
-        raise FileExistsError("Collections path does not exist.")
-    if not os.path.isdir(collection_path):
-        raise FileExistsError("Collection does not exist.")
+        raise FileExistsError(f"Collections path does not exist: {collections_path}")
+    if not os.path.isdir(raw_path):
+        raise FileExistsError(f"Raw path does not exist: {raw_path}")
+    if not os.path.isdir(path_to_collection):
+        raise FileExistsError(f"Collection does not exist: {path_to_collection}")
 
-    for (file_name, file_path, id_no) in recur_helper(collection, collection_path):
+    for (file_name, file_path, id_no) in recur_helper(collection, path_to_collection):
         try:
             destination_folder = os.path.join(raw_path, file_name)
-            destination_path = os.path.join(destination_folder, file_name + "_" + "id_no" + ".jpg")
+            destination_path = os.path.join(destination_folder, file_name + "_" + f'{id_no}' + ".jpg")
             os.makedirs(destination_folder, exist_ok=True)
+            if (file_path == destination_path):
+                raise Exception("same destionation: {file_path} : {destination_path}")
             shutil.copy(file_path, destination_path)
         except FileNotFoundError:
             print(f"Error: Source file '{file_path}' not found.")
