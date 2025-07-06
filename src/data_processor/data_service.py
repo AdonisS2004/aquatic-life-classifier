@@ -1,3 +1,5 @@
+# TO-DO: Add in a logger to replace debug print statements
+
 ################
 #   IMPORTS    #
 ################
@@ -25,26 +27,14 @@ unzip_data = True
 #   FUNCTIONS    #
 ##################
 
-def generate_data(data_config_path: str) -> dict:
+def generate_data(data_config_path: str) -> None:
     """
     Args:
         str: path to data config file
     Returns:
         dict: documentation about image data processing
-
-    Procedure:
-        1. (done) Create file structure.
-        2. (done) Download data. place in appropriate path (collection). 
-        3. Process data.
-            a. Place species and appropriate folders species/img.png.
-            b. Each image should be named species_name_collection_{id}.
-            c. Directory should be raw/species/img.png
-        4. For each image:
-            a. Resize Image.
-            b. Normalize Pixel Values.
-        5. Save processed images into processed/species/img.png
-        6. Document data.
     """
+
     # import data config
     print(f'importing data_config json to a dictionary')
     data_args = import_json_to_dict(data_config_path)
@@ -66,6 +56,17 @@ def generate_data(data_config_path: str) -> dict:
     for collection in data_args["collections"]:
         print(f'Processing: {collection}')
         process_collection(collection, collections_path, raw_path)
+        
     print(f'finished processing collections')
-def process_data():
-    pass
+
+def process_data(path: str, destination: str) -> None:
+    """  all folders and images in data/raw
+    Args:
+        str: path that contains all the data to be processed
+        str: destination for where new data will be located
+    Returns:
+        none
+    """
+    raw_path = os.path.join(ROOT, "data", "raw")
+    if not os.path.isdir(raw_path):
+        raise FileExistsError("Directory for raw images does not exist")
