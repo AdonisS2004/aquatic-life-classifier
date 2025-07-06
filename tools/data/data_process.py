@@ -1,4 +1,5 @@
 import os
+import shutil
 
 from ..file.file_manager import get_git_project_root
 from ..image.image_process import (
@@ -38,6 +39,22 @@ def process_collection(collection: str, collections_path:str, raw_path: str) -> 
     Return:
         None
     """
+    def recur_helper(directory_name: str, path: str):
+        """ Generator for Recursively find each species in a folder, assign them names and ID's
+        Args:
+            
+        Return:
+            None
+        Reference: https://stackoverflow.com/questions/33135038/how-do-i-use-os-scandir-to-return-direntry-objects-recursively-on-a-directory/33135143
+        """
+        id_no = 1 # starting ID number for image
+        for directory in os.scandir(path):
+            if directory.is_dir:
+                yield from recur_helper(directory_name + "_" + directory.name, directory.path)
+            else:  
+                yield (directory_name, directory.path, id_no)
+                id_no += 1
+
     collection_path = os.path.join(collections_path, collection)
 
     # check path existence, raise error otherwise
@@ -46,18 +63,17 @@ def process_collection(collection: str, collections_path:str, raw_path: str) -> 
     if not os.path.isdir(collection_path):
         raise FileExistsError("Collection does not exist.")
 
-    """
-    Procedure:
-        1. For each dataset in collection folder:
-            a. For each folder in dataset
-                i. extract folder name -> (species)
-                ii. create new folder in raw path named {species} (or check for existence)
-                iii. for each image inside of folder
-                    1. copy file into raw path folder named {species}
-                    2. rename file species_name_collection_{no.}
-    """
-    pass
-
+    for (file_name, file_path, id_no) in recur_helper(collection, collection_path):
+        try:
+            destination_folder = os.path.join(raw_path, file_name)
+            destination_path = os.path.join(destination_folder, file_name + "_" + "id_no" + ".jpg")
+            os.makedirs(destination_folder, exist_ok=True)
+            shutil.copy(file_path, destination_path)
+        except FileNotFoundError:
+            print(f"Error: Source file '{file_path}' not found.")
+        except Exception as e:
+            print(f"An error occured: {e}")
+    
 
 def process_raw():
     # TO-DO
