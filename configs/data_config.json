@@ -1,0 +1,10 @@
+{
+    "datasets": {
+        "kaggle": [
+            "vencerlanz09/sea-animals-image-dataste"
+        ]
+    },
+    "collections": [
+        "kaggle"
+    ]
+}
