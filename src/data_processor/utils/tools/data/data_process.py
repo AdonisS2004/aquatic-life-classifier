@@ -1,10 +1,9 @@
 import os
 import shutil
-
-# from ..image.image_process import (
-#     image_normalize,
-#     image_resize
-# )
+from ..image.image_process import (
+    image_normalize,
+    image_resize
+)
 
 def create_data_file_structure(path_dir: str) -> str:
     """ Recursively creates data file structure for ML purposes
@@ -41,7 +40,8 @@ def process_collection(collection: str, collections_path:str, raw_path: str) -> 
     def recur_helper(directory_name: str, path: str):
         """ Generator for Recursively find each species in a folder, assign them names and ID's
         Args:
-            
+            str: name to make the directory
+            str: current path to file
         Return:
             None
         Reference: https://stackoverflow.com/questions/33135038/how-do-i-use-os-scandir-to-return-direntry-objects-recursively-on-a-directory/33135143
@@ -49,7 +49,7 @@ def process_collection(collection: str, collections_path:str, raw_path: str) -> 
         id_no = 1 # starting ID number for image
         for directory in os.scandir(path):
             if directory.is_dir():
-                yield from recur_helper(directory_name + "_" + directory.name, directory.path)
+                yield from recur_helper(directory_name + "." + directory.name, directory.path)
             else:  
                 yield (directory_name, directory.path, id_no)
                 id_no += 1
@@ -69,8 +69,6 @@ def process_collection(collection: str, collections_path:str, raw_path: str) -> 
             destination_folder = os.path.join(raw_path, file_name)
             destination_path = os.path.join(destination_folder, file_name + "_" + f'{id_no}' + ".jpg")
             os.makedirs(destination_folder, exist_ok=True)
-            if (file_path == destination_path):
-                raise Exception("same destionation: {file_path} : {destination_path}")
             shutil.copy(file_path, destination_path)
         except FileNotFoundError:
             print(f"Error: Source file '{file_path}' not found.")
@@ -78,6 +76,31 @@ def process_collection(collection: str, collections_path:str, raw_path: str) -> 
             print(f"An error occured: {e}")
     
 
-def process_raw():
-    # TO-DO
-    pass
+def process_raw_image(path: str, destination: str, new_height: int = 224, new_width: int = 224, lower_norm: float = 0.0, upper_norm = 1.0) -> None:
+    """ Resizes and Normalizes all images path. 
+    Resulting image size: 224 x 224
+    Args:
+        str: path that contains all the data to be processed
+        str: destination for where new data will be located
+    Returns:
+        none
+    """
+    def recur_helper(path: str, destination: str):
+        """ Recursively generates image paths to generate
+        Args:
+        str: current
+        str: destination for data
+        Returns:
+            none
+        """
+        for file in os.scandir(path):
+            if file.is_dir():
+                yield from recur_helper(file.path, os.path.join(destination, file.name))
+            else:
+                yield (file.path, destination, os.path.join(destination, file.name))
+
+    for (image_path, image_folder, image_destination) in recur_helper(path, destination):
+        os.makedirs(image_folder, exist_ok=True)
+        shutil.copy(image_path, image_destination)
+        image_resize(image_path, image_destination, new_height, new_width)
+        image_normalize(image_destination,image_destination)
