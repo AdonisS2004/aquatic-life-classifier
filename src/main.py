@@ -34,9 +34,18 @@ logging.basicConfig(
     datefmt='%m/%d/%Y %I:%M:%S %p'
 )
 
-if __name__ == "__main__":
-    # generate_data(DATA_CONFIG)
+##################
+#   FUNCTIONS    #
+##################
+
+# main function
+def main(logger: logging.Logger) -> None:
+    logger.info("Generating data")
+    generate_data(logger, DATA_CONFIG)
     logger.info("Data generated")
     logger.info("Processing data")
-    # process_data(path_to_raw, path_to_processed)
+    process_data(logger, path_to_raw, path_to_processed)
     logger.info("Data Processed")
+
+if __name__ == "__main__":
+    main(logger)

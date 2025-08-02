@@ -17,9 +17,9 @@ def create_data_file_structure(path_dir: str) -> str:
         "data/collections/",
         "data/processed",
         "data/raw",
-        "data/splits/train"
-        "data/splits/test"
-        "data/splits/val"
+        "data/splits/train",
+        "data/splits/test",
+        "data/splits/val",
     ]
 
     for folder in folders:
