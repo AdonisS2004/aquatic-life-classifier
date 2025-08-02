@@ -3,13 +3,12 @@
 ################
 #   IMPORTS    #
 ################
-
 import os
-
 from .utils.tools.data.data_fetch import download_kaggle_datasets
 from .utils.tools.data.data_process import (
     create_data_file_structure, 
-    process_collection
+    process_collection,
+    process_raw_image
 )
 from .utils.tools.file.file_manager import (
     import_json_to_dict,
@@ -59,14 +58,14 @@ def generate_data(data_config_path: str) -> None:
         
     print(f'finished processing collections')
 
-def process_data(path: str, destination: str) -> None:
-    """  all folders and images in data/raw
+def process_data(path: str, destination: str, new_height: int = 224, new_width: int = 224) -> None:
+    """ Function for processing all folders and images in data/raw
     Args:
         str: path that contains all the data to be processed
         str: destination for where new data will be located
     Returns:
         none
     """
-    raw_path = os.path.join(ROOT, "data", "raw")
-    if not os.path.isdir(raw_path):
+    if not os.path.isdir(path):
         raise FileExistsError("Directory for raw images does not exist")
+    process_raw_image(path, destination, new_height, new_width)
