@@ -1,0 +1,16 @@
+08/03/2025 01:12:41 PM function generate_data called with args '/Users/adonisserrano/Documents/GitHub/aquatic-life-classifier/configs/data_config.json'
+08/03/2025 01:12:41 PM Importing data_config json to a dictionary
+08/03/2025 01:12:41 PM Finished importing data_config.json
+08/03/2025 01:12:41 PM Downloading kaggle dataset
+08/03/2025 01:16:52 PM Finished downloading kaggle dataset
+08/03/2025 01:16:52 PM Processing collections
+08/03/2025 01:16:52 PM Processing: kaggle
+08/03/2025 01:17:43 PM Collection Processed: kaggle
+08/03/2025 01:17:43 PM Finished processing collections
+08/03/2025 01:17:43 PM function generate_data finished with execution time 301.649327208
+08/03/2025 01:17:43 PM function process_data called with args '/Users/adonisserrano/Documents/GitHub/aquatic-life-classifier/data/raw', '/Users/adonisserrano/Documents/GitHub/aquatic-life-classifier/data/processed'
+08/03/2025 01:17:43 PM Exception raised in process_data. exception: process_data() missing 1 required positional argument: 'destination'
+Traceback (most recent call last):
+  File "/Users/adonisserrano/Documents/GitHub/aquatic-life-classifier/src/utils/management/decorators.py", line 57, in wrapper
+    res = func(*args, *kwargs)
+TypeError: process_data() missing 1 required positional argument: 'destination'
