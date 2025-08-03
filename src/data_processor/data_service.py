@@ -1,19 +1,21 @@
-# TO-DO: Add in a logger to replace debug print statements
-
 ################
 #   IMPORTS    #
 ################
 import os
 import logging
-from .utils.tools.data.data_fetch import download_kaggle_datasets
-from .utils.tools.data.data_process import (
+from ..utils.data.data_fetch import download_kaggle_datasets
+from ..utils.data.data_process import (
     create_data_file_structure, 
     process_collection,
     process_raw_image
 )
-from .utils.tools.file.file_manager import (
+from ..utils.management.file_manager import (
     import_json_to_dict,
     get_git_project_root
+)
+from ..utils.management.decorators import (
+    timer,
+    log
 )
 
 #################
@@ -21,13 +23,15 @@ from .utils.tools.file.file_manager import (
 #################
 
 ROOT = get_git_project_root(os.path.dirname(os.path.realpath(__file__)))
+logger = logging.getLogger(__name__)
 unzip_data = True
 
 ##################
 #   FUNCTIONS    #
 ##################
 
-def generate_data(logger: logging.Logger, data_config_path: str) -> None:
+@log(include_timer=True)
+def generate_data(data_config_path: str) -> None:
     """
     Args:
         str: path to data config file
@@ -59,7 +63,8 @@ def generate_data(logger: logging.Logger, data_config_path: str) -> None:
         logger.info(f'Collection Processed: {collection}')
     logger.info(f'Finished processing collections')
 
-def process_data(logger: logging.Logger, path: str, destination: str, new_height: int = 224, new_width: int = 224) -> None:
+@log(include_timer=True)
+def process_data(path: str, destination: str, new_height: int = 224, new_width: int = 224) -> None:
     """ Function for processing all folders and images in data/raw
     Args:
         str: path that contains all the data to be processed
