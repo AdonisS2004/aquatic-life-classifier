@@ -1,14 +1,14 @@
 import torch
 import torch.nn as nn
 import torchsummary as summary
-import utils.blocks as blocks
+from .utils import blocks
 import logging
 
 class AquaticLifeCNN(nn.Module):
     """
     Aquatic Life Classifiying Model
     """
-    def __init__(self, num_classes = 46):
+    def __init__(self, num_classes = 23):
         super(AquaticLifeCNN, self).__init__()
         self.num_classes = num_classes
         self.feature_extractor = blocks.FeatureExtractor()
@@ -53,7 +53,7 @@ class AquaticLifeCNN(nn.Module):
         
         return features
     
-def create_model(num_classes:int=46, device:str='cuda', logger:logging.Logger = None):
+def create_model(num_classes:int=23, device:str='cuda', logger:logging.Logger = None):
     """
     Factory function to create and initialize the model
     """

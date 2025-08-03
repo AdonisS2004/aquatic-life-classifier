@@ -10,7 +10,6 @@ from .data_processor.data_service import (
     process_data
 )
 from .data_classifier import cnn
-from .data_pipeline import pipeline_service as ps
 
 #################
 #   VARIABLES   #
@@ -47,7 +46,6 @@ def main() -> None:
     """
     generate_data(DATA_CONFIG)
     process_data(path_to_raw, path_to_processed)
-    ps.setup_training_pipeline()
 
 if __name__ == "__main__":
     main()

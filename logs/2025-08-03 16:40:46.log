@@ -1,0 +1,14 @@
+08/03/2025 04:40:46 PM function generate_data called with args '/Users/adonisserrano/Documents/GitHub/aquatic-life-classifier/configs/data_config.json'
+08/03/2025 04:40:46 PM Importing data_config json to a dictionary
+08/03/2025 04:40:46 PM Finished importing data_config.json
+08/03/2025 04:40:46 PM Downloading kaggle dataset
+08/03/2025 04:40:55 PM Finished downloading kaggle dataset
+08/03/2025 04:40:55 PM Processing collections
+08/03/2025 04:40:55 PM Processing: kaggle
+08/03/2025 04:42:28 PM Collection Processed: kaggle
+08/03/2025 04:42:28 PM Finished processing collections
+08/03/2025 04:42:28 PM function generate_data finished with execution time 102.308720791
+08/03/2025 04:42:28 PM function process_data called with args '/Users/adonisserrano/Documents/GitHub/aquatic-life-classifier/data/raw', '/Users/adonisserrano/Documents/GitHub/aquatic-life-classifier/data/processed'
+08/03/2025 04:42:28 PM Processing raw data
+08/03/2025 04:47:11 PM Finished Processing raw data
+08/03/2025 04:47:11 PM function process_data finished with execution time 282.77852125000004
