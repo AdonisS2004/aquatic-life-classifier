@@ -4,7 +4,7 @@ import json
 def get_git_project_root(current_path: str) -> str:
     """Find the root path of current github project
     Args:
-        str: currrent path of the
+        str: currrent path of the file
     Returns:
         str: string of the github project root path
     """
@@ -35,3 +35,13 @@ def import_json_to_dict(json_dir: str) -> dict:
 def export_dict_to_json():
     # TO-DO
     pass
+
+def get_directories_in_directory(path: str) -> list[str]:
+    """ Gets all the names of directories in a directory
+    Args
+        str: directory path
+    Return:
+        list[str]: list of the names of all directories
+    """
+    res = []
+    return res
