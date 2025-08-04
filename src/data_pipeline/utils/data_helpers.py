@@ -187,17 +187,105 @@ def create_data_splits(source:str, target:str, train_ratio:float = 0.7, val_rati
     print(f"\nSplit information saved to: {target / 'split_info.json'}")
     return split_info  
 
-def create_data_loaders():
+def create_data_loaders(data_dir:str, batch_size:int=32, num_workers:int=4):
     """
-    (Insert Description)
+    Create data loaders for training, validation, and testing
     """
-    pass
+    
+    train_transforms, val_transforms = create_data_transforms()
+    
+    # Create datasets
+    train_dataset = AquaticLifeDataset(
+        data_dir=os.path.join(data_dir, 'train'), 
+        transform=train_transforms,
+        phase='train'
+    )
+    
+    val_dataset = AquaticLifeDataset(
+        data_dir=os.path.join(data_dir, 'val'), 
+        transform=val_transforms,
+        phase='val'
+    )
+    
+    test_dataset = AquaticLifeDataset(
+        data_dir=os.path.join(data_dir, 'test'),
+        transform=val_transforms,
+        phase='test'
+    )
+    
+    # Create data loaders
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memory=True  # Faster GPU transfer
+    )
+    
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_workers,
+        pin_memory=True
+    )
+    
+    test_loader = DataLoader(
+        test_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_workers,
+        pin_memory=True
+    )
+    
+    print(f"Training samples: {len(train_dataset)}")
+    print(f"Validation samples: {len(val_dataset)}")
+    print(f"Testing samples: {len(test_dataset)}")
+    
+    return train_loader, val_loader, test_loader, train_dataset.class_to_index
 
 def create_data_transforms():
+    """ Creates data transformers for training and validation/testing
+    Args:
+        None
+    Return:
+        training_transformer and validation_transformer
     """
-    (Insert Description)
-    """
-    pass
+    # Training transforms with augmentation
+    train_transforms = transforms.Compose([
+        transforms.Resize((256, 256)),  # Slightly larger than target
+        transforms.RandomCrop(224),     # Random crop to 224x224
+        transforms.RandomHorizontalFlip(p=0.5),  # Fish can face either direction
+        transforms.RandomRotation(degrees=15),    # Slight rotation
+        transforms.ColorJitter(
+            brightness=0.2,    # Underwater lighting varies
+            contrast=0.2,      # Different water clarity
+            saturation=0.2,    # Color variation underwater
+            hue=0.1           # Slight color shifts
+        ),
+        transforms.RandomAffine(
+            degrees=0,
+            scale=(0.9, 1.1),  # Slight zoom in/out
+            shear=5            # Small perspective changes
+        ),
+        transforms.ToTensor(),
+        transforms.Normalize(
+            mean=[0.485, 0.456, 0.406],  # ImageNet normalization
+            std=[0.229, 0.224, 0.225]
+        )
+    ])
+
+    # Validation/test transforms (no augmentation)
+    val_transforms = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize(
+            mean=[0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225]
+        )
+    ])
+    
+    return train_transforms, val_transforms
 
 def train_epoch():
     """
