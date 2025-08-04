@@ -4,6 +4,9 @@ from ...utils.management.file_manager import iter_files_in_folder
 
 import os
 import logging
+import random
+import shutil
+import json
 from PIL import Image
 
 #################
@@ -80,13 +83,11 @@ def AquaticLifeDataset(Dataset):
         Gets the distribution of the data
         """
         class_count = {}
-        
         for label in self.image_labels:
             class_name = self.index_to_class[label]
             if class_name not in class_count:
                 class_count[class_name] = 0
             class_count[class_name] += 1
-
         return class_count
 
 
@@ -107,14 +108,105 @@ def get_labels(path: str) -> tuple[int, list[str]]:
     n = len(res)
     return (n, res)
 
+def create_data_splits(source:str, target:str, train_ratio:float = 0.7, val_ratio:float = 0.15, test_ratio:float = 0.15) -> dict[str:list[tuple[str, int]]]:
+    """ Splits existing data into 
+    Args:
+        str: source path (foders of different species)
+        str: target path
+        float: ratio of training data (default=0.7)
+        float: ratio of validation data (default=0.15)
+        float: ratio of test data (default=0.15)
+    Return:
+        dict[str:list[tuple[str, int]]]: split info dictionary
+    """
+    # make sure that the ratios are okay
+    assert (1.0 - (train_ratio + val_ratio + test_ratio)) < 1e-6
+
+    # create splits (in case they don't exist)
+    splits = ["train", "test", "val"]
+    for split in splits:
+        directory = os.path.join(source, split)
+        os.makedirs(directory, exist_ok=True)
+    
+    # split data
+    split_info = {"train":[], "test":[], "val":[]}
+    for species_class in iter_files_in_folder(source):
+        # create/gather directories
+        data_source = os.path.join(source, species_class)
+        for split in splits:
+            directory = os.path.join(target, split, species_class)
+            os.makedirs(directory, exist_ok=True)
+        train_path = os.path.join(target, "train", species_class)
+        val_path = os.path.join(target, "val", species_class)
+        test_path = os.path.join(target, "test", species_class)
+
+        # gather all images
+        data_files = [os.path.join(data_source, image) for image in iter_files_in_folder(data_source)]
+
+        # check if no images
+        n = len(data_files)
+        if len(data_files) == 0:
+            print(f"Data Source: {data_source}, is empty.")
+            continue
+            
+        # get random splits
+        n_train = int(n * train_ratio)
+        n_val = int(n * val_ratio)
+        n_test = n - n_train - n_val
+
+        random.shuffle(data_files)
+
+        train_files = data_files[:n_train]
+        val_files = data_files[n_train:n_train+n_val]
+        test_files = data_files[n_train+n_val:]
+
+        # copy over files
+        for files, split in [(train_files, "train"), (val_files, "val"), (test_files, "test")]:
+            for file in files:
+                data_file_source = os.path.join(data_source, file)
+                data_file_dest = os.path.join(target, split, species_class, file)
+                shutil.copy2(data_file_source, data_file_dest)
+
+        split_info['train'].append((species_class, len(train_files)))
+        split_info['val'].append((species_class, len(val_files)))
+        split_info['test'].append((species_class, len(test_files)))
+    
+    # Print split summary
+    print("\n" + "="*50)
+    print("DATA SPLIT SUMMARY")
+    print("="*50)
+    
+    for split in splits:
+        total_images = sum([count for _, count in split_info[split]])
+        print(f"{split.upper()}: {total_images} images")
+    
+    # Save split information
+    with open(target / 'split_info.json', 'w') as f:
+        json.dump(split_info, f, indent=2)
+    
+    print(f"\nSplit information saved to: {target / 'split_info.json'}")
+    return split_info  
+
 def create_data_loaders():
+    """
+    (Insert Description)
+    """
     pass
 
 def create_data_transforms():
+    """
+    (Insert Description)
+    """
     pass
 
 def train_epoch():
+    """
+    (Insert Description)
+    """
     pass
 
 def validate_epoch():
+    """
+    (Insert Description)
+    """
     pass
