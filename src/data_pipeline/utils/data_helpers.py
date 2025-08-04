@@ -1,6 +1,8 @@
-from torch.utils.data import Dataset, DataLoader
+import torch
 from torchvision import transforms
 from ...utils.management.file_manager import iter_files_in_folder
+from torch.utils.data import Dataset, DataLoader
+from tqdm import tqdm
 
 import os
 import logging
@@ -19,11 +21,11 @@ logger = logging.getLogger(__name__)
 #   Classes   #
 ###############
 
-def AquaticLifeDataset(Dataset):
+class AquaticLifeDataset(Dataset):
     """
     Custom Aquatic Life Dataset
     """
-    def __init__(self, data_dir:str, transform = None, phase:str = "train") -> None:
+    def __init__(self, data_dir, transform=None, phase="train") -> None:
         self.data_dir = data_dir
         self.transform = transform
         self.phase = phase
@@ -33,11 +35,14 @@ def AquaticLifeDataset(Dataset):
         self.index_to_class = {}
         self.class_to_index = {}
 
+        self._load_dataset()
+
     def _load_dataset(self):
         """ 
         Populates the dataset with data from the data_dir
         """
-        n, labels = sorted(get_labels(self.data_dir))
+        n, labels = get_labels(self.data_dir)
+        labels = sorted(labels)
         for idx, label in enumerate(labels):
             image_folder = os.path.join(self.data_dir, label)
             self.index_to_class[idx] = label
@@ -46,17 +51,17 @@ def AquaticLifeDataset(Dataset):
             for image_file in iter_files_in_folder(image_folder):
                 self.image_paths.append(os.path.join(image_folder, image_file))
                 self.image_labels.append(idx) # used to map idx of image path to class
-        print(f"Loaded {len(self.image_paths)} images from {len(n)} species")
+        print(f"Loaded {len(self.image_paths)} images from {n} species")
 
 
-    def __len__(self) -> int:
+    def __len__(self):
         """ Returns the number of classes/labels in the dataset
         Return
             int: number of classes/labels in the dataset
         """
         return len(self.image_labels)
 
-    def __get_item__(self, idx):
+    def __getitem__(self, idx):
         """
         Gets
         Args:
@@ -65,7 +70,7 @@ def AquaticLifeDataset(Dataset):
             tuple(Image, int): Image object for classification and label int
         """
         image_path = self.image_paths[idx]
-        label = self.labels[idx]
+        label = self.image_labels[idx]
 
         try:
             image = Image.open(image_path).convert("RGB")
@@ -125,7 +130,7 @@ def create_data_splits(source:str, target:str, train_ratio:float = 0.7, val_rati
     # create splits (in case they don't exist)
     splits = ["train", "test", "val"]
     for split in splits:
-        directory = os.path.join(source, split)
+        directory = os.path.join(target, split)
         os.makedirs(directory, exist_ok=True)
     
     # split data
@@ -136,12 +141,9 @@ def create_data_splits(source:str, target:str, train_ratio:float = 0.7, val_rati
         for split in splits:
             directory = os.path.join(target, split, species_class)
             os.makedirs(directory, exist_ok=True)
-        train_path = os.path.join(target, "train", species_class)
-        val_path = os.path.join(target, "val", species_class)
-        test_path = os.path.join(target, "test", species_class)
 
         # gather all images
-        data_files = [os.path.join(data_source, image) for image in iter_files_in_folder(data_source)]
+        data_files = [image for image in iter_files_in_folder(data_source)]
 
         # check if no images
         n = len(data_files)
@@ -181,10 +183,10 @@ def create_data_splits(source:str, target:str, train_ratio:float = 0.7, val_rati
         print(f"{split.upper()}: {total_images} images")
     
     # Save split information
-    with open(target / 'split_info.json', 'w') as f:
+    with open(os.path.join(target,'split_info.json'), 'w') as f:
         json.dump(split_info, f, indent=2)
     
-    print(f"\nSplit information saved to: {target / 'split_info.json'}")
+    print(f"\nSplit information saved to: {os.path.join(target,'split_info.json')}")
     return split_info  
 
 def create_data_loaders(data_dir:str, batch_size:int=32, num_workers:int=4):
@@ -196,21 +198,21 @@ def create_data_loaders(data_dir:str, batch_size:int=32, num_workers:int=4):
     
     # Create datasets
     train_dataset = AquaticLifeDataset(
-        data_dir=os.path.join(data_dir, 'train'), 
+        os.path.join(data_dir, 'train'),
         transform=train_transforms,
-        phase='train'
+        phase='train',
     )
     
     val_dataset = AquaticLifeDataset(
-        data_dir=os.path.join(data_dir, 'val'), 
-        transform=val_transforms,
-        phase='val'
+        os.path.join(data_dir, 'val'), 
+        val_transforms,
+        'val',
     )
     
     test_dataset = AquaticLifeDataset(
-        data_dir=os.path.join(data_dir, 'test'),
-        transform=val_transforms,
-        phase='test'
+        os.path.join(data_dir, 'test'),
+        val_transforms,
+        'test',
     )
     
     # Create data loaders
@@ -287,14 +289,67 @@ def create_data_transforms():
     
     return train_transforms, val_transforms
 
-def train_epoch():
-    """
-    (Insert Description)
-    """
-    pass
+def train_epoch(model, train_loader, criterion, optimizer, device, epoch):
+    """Train model for one epoch"""
+    model.train()
+    running_loss = 0.0
+    correct_predictions = 0
+    total_samples = 0
+    
+    progress_bar = tqdm(train_loader, desc=f'Epoch {epoch}')
+    
+    for batch_idx, (images, labels) in enumerate(progress_bar):
+        images, labels = images.to(device), labels.to(device)
+        
+        # Zero gradients
+        optimizer.zero_grad()
+        
+        # Forward pass
+        outputs = model(images)
+        loss = criterion(outputs, labels)
+        
+        # Backward pass
+        loss.backward()
+        optimizer.step()
+        
+        # Statistics
+        running_loss += loss.item()
+        _, predicted = torch.max(outputs.data, 1)
+        total_samples += labels.size(0)
+        correct_predictions += (predicted == labels).sum().item()
+        
+        # Update progress bar
+        accuracy = 100 * correct_predictions / total_samples
+        progress_bar.set_postfix({
+            'Loss': f'{running_loss/(batch_idx+1):.4f}',
+            'Acc': f'{accuracy:.2f}%'
+        })
+    
+    epoch_loss = running_loss / len(train_loader)
+    epoch_accuracy = 100 * correct_predictions / total_samples
+    
+    return epoch_loss, epoch_accuracy
 
-def validate_epoch():
-    """
-    (Insert Description)
-    """
-    pass
+def validate_epoch(model, val_loader, criterion, device):
+    """Validate model"""
+    model.eval()
+    running_loss = 0.0
+    correct_predictions = 0
+    total_samples = 0
+    
+    with torch.no_grad():
+        for images, labels in tqdm(val_loader, desc='Validation'):
+            images, labels = images.to(device), labels.to(device)
+            
+            outputs = model(images)
+            loss = criterion(outputs, labels)
+            
+            running_loss += loss.item()
+            _, predicted = torch.max(outputs.data, 1)
+            total_samples += labels.size(0)
+            correct_predictions += (predicted == labels).sum().item()
+    
+    epoch_loss = running_loss / len(val_loader)
+    epoch_accuracy = 100 * correct_predictions / total_samples
+    
+    return epoch_loss, epoch_accuracy

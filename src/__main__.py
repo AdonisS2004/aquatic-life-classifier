@@ -45,8 +45,8 @@ def main() -> None:
     """
     Main location for executable logic for Classifcaiton model
     """
-    generate_data(DATA_CONFIG)
-    process_data(path_to_raw, path_to_processed)
+    # generate_data(DATA_CONFIG)
+    # process_data(path_to_raw, path_to_processed)
     ps.setup_training_pipeline()
 
 if __name__ == "__main__":

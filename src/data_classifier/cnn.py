@@ -4,6 +4,16 @@ import torchsummary as summary
 from .utils import blocks
 import logging
 
+#################
+#   Variables   #
+#################
+
+logger = logging.getLogger(__name__)
+
+###############
+#   Classes   #
+###############
+
 class AquaticLifeCNN(nn.Module):
     """
     Aquatic Life Classifiying Model
@@ -53,57 +63,46 @@ class AquaticLifeCNN(nn.Module):
         
         return features
     
-def create_model(num_classes:int=23, device:str='cuda', logger:logging.Logger = None):
+#################
+#   Functions   #
+#################
+
+def create_model(num_classes:int=23, device:str='mps'):
     """
     Factory function to create and initialize the model
     """
     model = AquaticLifeCNN(num_classes=num_classes)
-    if device == 'cuda' and torch.cuda.is_available():
-        model = model.cuda()
-        if logger: logger.info(f"Model moved to GPU: {torch.cuda.get_device_name()}")
-        else: print(f"Model moved to GPU: {torch.cuda.get_device_name()}")
+    if device == 'mps' and torch.backends.mps.is_available():
+        mps_device = torch.device("mps")
+        model = model.to(mps_device)
+        logger.info(f"Model moved to GPU")
     else: 
-        if logger: logger.info("Model running on CPU")
-        else: print("Model running on CPU")
+        logger.info("Model running on CPU")
     return model
 
-def count_parameters(model, logger:logging.Logger = None):
+def count_parameters(model):
     """
     Count trainable parameters
     """
     total = sum(p.numel() for p in model.parameters())
     trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    if logger:
-        logger.info(f"Total parameters: {total:,}")
-        logger.info(f"Trainable parameters: {trainable:,}")
-        logger.info(f"Model size: {total * 4 / (1024**2):.2f} MB")  # Assuming float32
-    else:
-        print(f"Total parameters: {total:,}")
-        print(f"Trainable parameters: {trainable:,}")
-        print(f"Model size: {total * 4 / (1024**2):.2f} MB")  # Assuming float32
-    
+    logger.info(f"Total parameters: {total:,}")
+    logger.info(f"Trainable parameters: {trainable:,}")
+    logger.info(f"Model size: {total * 4 / (1024**2):.2f} MB")  # Assuming float32
     return total, trainable
 
-def model_summary(logger: logging.Logger = None):
+def model_summary():
     """
     Print detailed model summary
     """
     model = create_model(num_classes=46, device='cpu')
 
-    if logger:
-        logger.info("Detailed Model Architecture:")
-        logger.info("="*50)
-    else:
-        print("Detailed Model Architecture:")
-        print("="*50)
+    logger.info("Detailed Model Architecture:")
+    logger.info("="*50)
     
     # Use torchsummary if available
     try:
         summary(model, (3, 224, 224))
     except ImportError:
-        if logger:
-            logger.info("Install torchsummary for detailed summary: pip install torchsummary")
-            logger.info(model)
-        else:
-            print("Install torchsummary for detailed summary: pip install torchsummary")
-            print(model)
+        logger.info("Install torchsummary for detailed summary: pip install torchsummary")
+        logger.info(model)
