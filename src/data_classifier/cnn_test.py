@@ -1,5 +1,5 @@
 import torch
-from cnn import (
+from .cnn import (
     create_model,
     count_parameters
 )

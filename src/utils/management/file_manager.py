@@ -36,12 +36,12 @@ def export_dict_to_json():
     # TO-DO
     pass
 
-def get_directories_in_directory(path: str) -> list[str]:
+def iter_files_in_folder(path: str):
     """ Gets all the names of directories in a directory
     Args
         str: directory path
     Return:
         list[str]: list of the names of all directories
     """
-    res = []
-    return res
+    for file in os.listdir(path):
+        yield file
