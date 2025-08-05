@@ -1,6 +1,6 @@
 import torch
 from torchvision import transforms
-from ...utils.management.file_manager import iter_files_in_folder
+from ...utils.file_manager import iter_files_in_folder
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 
@@ -127,11 +127,15 @@ def create_data_splits(source:str, target:str, train_ratio:float = 0.7, val_rati
     # make sure that the ratios are okay
     assert (1.0 - (train_ratio + val_ratio + test_ratio)) < 1e-6
 
-    # create splits (in case they don't exist)
+    # create splits (delete existing spltis and recreate them)
     splits = ["train", "test", "val"]
     for split in splits:
-        directory = os.path.join(target, split)
-        os.makedirs(directory, exist_ok=True)
+        directory_path = os.path.join(target, split)
+        try:
+            shutil.rmtree(directory_path)
+            os.makedirs(directory_path, exist_ok=True)
+        except OSError as e:
+            print(f"Error removing directory: {e}")
     
     # split data
     split_info = {"train":[], "test":[], "val":[]}
@@ -189,7 +193,7 @@ def create_data_splits(source:str, target:str, train_ratio:float = 0.7, val_rati
     print(f"\nSplit information saved to: {os.path.join(target,'split_info.json')}")
     return split_info  
 
-def create_data_loaders(data_dir:str, batch_size:int=32, num_workers:int=4):
+def create_data_loaders(data_dir:str, batch_size:int=32, num_workers:int=4) -> tuple[DataLoader, DataLoader, DataLoader, dict]:
     """
     Create data loaders for training, validation, and testing
     """
@@ -240,9 +244,9 @@ def create_data_loaders(data_dir:str, batch_size:int=32, num_workers:int=4):
         pin_memory=True
     )
     
-    print(f"Training samples: {len(train_dataset)}")
-    print(f"Validation samples: {len(val_dataset)}")
-    print(f"Testing samples: {len(test_dataset)}")
+    logger.info(f"Training samples: {len(train_dataset)}")
+    logger.info(f"Validation samples: {len(val_dataset)}")
+    logger.info(f"Testing samples: {len(test_dataset)}")
     
     return train_loader, val_loader, test_loader, train_dataset.class_to_index
 
@@ -290,7 +294,9 @@ def create_data_transforms():
     return train_transforms, val_transforms
 
 def train_epoch(model, train_loader, criterion, optimizer, device, epoch):
-    """Train model for one epoch"""
+    """
+    Train model for one epoch
+    """
     model.train()
     running_loss = 0.0
     correct_predictions = 0
@@ -300,24 +306,19 @@ def train_epoch(model, train_loader, criterion, optimizer, device, epoch):
     
     for batch_idx, (images, labels) in enumerate(progress_bar):
         images, labels = images.to(device), labels.to(device)
-        
         # Zero gradients
         optimizer.zero_grad()
-        
         # Forward pass
         outputs = model(images)
         loss = criterion(outputs, labels)
-        
         # Backward pass
         loss.backward()
         optimizer.step()
-        
         # Statistics
         running_loss += loss.item()
         _, predicted = torch.max(outputs.data, 1)
         total_samples += labels.size(0)
         correct_predictions += (predicted == labels).sum().item()
-        
         # Update progress bar
         accuracy = 100 * correct_predictions / total_samples
         progress_bar.set_postfix({

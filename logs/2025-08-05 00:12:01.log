@@ -1,0 +1,6 @@
+08/05/2025 12:12:01 AM Device: mps
+08/05/2025 12:12:01 AM Batch size: 32
+08/05/2025 12:12:01 AM Learning rate: 0.001
+08/05/2025 12:12:01 AM Step 3: Creating data splits...
+08/05/2025 12:12:08 AM Step 3: SUCCESS
+08/05/2025 12:12:08 AM Step 5: Train Model

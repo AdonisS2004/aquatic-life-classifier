@@ -1,0 +1,11 @@
+08/05/2025 12:55:09 PM Device: mps
+08/05/2025 12:55:09 PM Batch size: 32
+08/05/2025 12:55:09 PM Learning rate: 0.001
+08/05/2025 12:55:18 PM Training samples: 9588
+08/05/2025 12:55:18 PM Validation samples: 2046
+08/05/2025 12:55:18 PM Testing samples: 2077
+08/05/2025 12:55:18 PM Step 5: Train Model
+08/05/2025 12:55:18 PM Model moved to GPU
+08/05/2025 12:55:18 PM Step 5: SUCCESS
+08/05/2025 12:55:18 PM Step 6: Train Model
+08/05/2025 02:07:23 PM Step 6: SUCCESS

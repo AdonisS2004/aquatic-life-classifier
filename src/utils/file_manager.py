@@ -32,10 +32,6 @@ def import_json_to_dict(json_dir: str) -> dict:
     with open(json_dir, 'r') as f:
         return json.load(f)
 
-def export_dict_to_json():
-    # TO-DO
-    pass
-
 def iter_files_in_folder(path: str):
     """ Gets all the names of directories in a directory
     Args

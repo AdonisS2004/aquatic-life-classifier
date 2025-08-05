@@ -3,18 +3,16 @@
 ################
 import os
 import logging
-from ..utils.data.data_fetch import download_kaggle_datasets
-from ..utils.data.data_process import (
+from .utils.data_fetch import download_kaggle_datasets
+from .utils.data_process import (
     create_data_file_structure, 
     process_collection,
     process_raw_image
 )
-from ..utils.management.file_manager import (
+from ..utils.file_manager import (
     import_json_to_dict,
-    get_git_project_root
 )
-from ..utils.management.decorators import (
-    timer,
+from ..utils.decorators import (
     log
 )
 
@@ -22,7 +20,6 @@ from ..utils.management.decorators import (
 #   VARIABLES   #
 #################
 
-ROOT = get_git_project_root(os.path.dirname(os.path.realpath(__file__)))
 logger = logging.getLogger(__name__)
 unzip_data = True
 
@@ -31,7 +28,7 @@ unzip_data = True
 ##################
 
 @log(include_timer=True)
-def generate_data(data_config_path: str) -> None:
+def generate_data(root_path: str, data_config_path: str) -> None:
     """
     Args:
         str: path to data config file
@@ -45,12 +42,11 @@ def generate_data(data_config_path: str) -> None:
     logger.info(f'Finished importing data_config.json')    
 
     # create data path; grab key data paths
-    data_folder_path = create_data_file_structure(ROOT)
+    data_folder_path = create_data_file_structure(root_path)
     raw_path = os.path.join(data_folder_path, "raw")
-    splits_path = os.path.join(data_folder_path, "splits")
     collections_path = os.path.join(data_folder_path, "collections")
 
-    # download data
+    # download kaggle data
     logger.info(f'Downloading kaggle dataset')
     download_kaggle_datasets(data_args["datasets"]["kaggle"], collections_path, unzip_data)
     logger.info(f'Finished downloading kaggle dataset')

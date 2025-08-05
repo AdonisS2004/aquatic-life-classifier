@@ -1,6 +1,6 @@
 import os
 import shutil
-from ..image.image_process import (
+from .image_process import (
     image_normalize,
     image_resize
 )
@@ -102,5 +102,6 @@ def process_raw_image(path: str, destination: str, new_height: int = 224, new_wi
     for (image_path, image_folder, image_destination) in recur_helper(path, destination):
         os.makedirs(image_folder, exist_ok=True)
         shutil.copy(image_path, image_destination)
-        image_resize(image_path, image_destination, new_height, new_width)
-        image_normalize(image_destination,image_destination)
+        # NOTE: IMAGE PRE-PROCESSING MAY IMPACT TRAINING
+        # image_resize(image_path, image_destination, new_height, new_width)
+        # image_normalize(image_destination,image_destination) # MIGHT POSE AS AN ISSUE
