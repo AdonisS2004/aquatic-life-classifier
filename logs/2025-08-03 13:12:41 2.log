@@ -1,4 +1,0 @@
-08/03/2025 01:12:41 PM function generate_data called with args '/Users/adonisserrano/Documents/GitHub/aquatic-life-classifier/configs/data_config.json'
-08/03/2025 01:12:41 PM Importing data_config json to a dictionary
-08/03/2025 01:12:41 PM Finished importing data_config.json
-08/03/2025 01:12:41 PM Downloading kaggle dataset

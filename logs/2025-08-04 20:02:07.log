@@ -1,0 +1,9 @@
+08/04/2025 08:02:07 PM function setup_training_pipeline called with args 
+08/04/2025 08:02:07 PM Device: mps
+08/04/2025 08:02:07 PM Batch size: 32
+08/04/2025 08:02:07 PM Learning rate: 0.1
+08/04/2025 08:02:07 PM Step 1: Creating data splits...
+08/04/2025 08:02:13 PM Step 2: Creating data loaders...
+08/04/2025 08:02:13 PM Step 3: Initializing model...
+08/04/2025 08:02:13 PM Model moved to GPU
+08/04/2025 08:02:13 PM Step 4: Ready to start training!

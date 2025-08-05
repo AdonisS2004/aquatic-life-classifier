@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 #   Functions   #  
 #################
 
-@log(include_timer=True)
+# @log(include_timer=True)
 def train_model(model, train_loader, val_loader, num_epochs=50, learning_rate=0.001, device='mps'):
     """
     Complete training pipeline
@@ -39,7 +39,7 @@ def train_model(model, train_loader, val_loader, num_epochs=50, learning_rate=0.
     
     # Loss function and optimizer
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
+    optimizer = optim.Adam(model.parameters(), lr=float(learning_rate), weight_decay=1e-4)
     
     # Learning rate scheduler
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
@@ -53,7 +53,7 @@ def train_model(model, train_loader, val_loader, num_epochs=50, learning_rate=0.
     }
     
     best_val_acc = 0.0
-    best_model_path = 'best_model.pth'
+    best_model_path = 'models/best_model.pth'
     
     print("Starting training...")
     print("="*50)
@@ -94,9 +94,7 @@ def train_model(model, train_loader, val_loader, num_epochs=50, learning_rate=0.
                 'history': history
             }, best_model_path)
             print(f'New best model saved! Val Acc: {val_acc:.2f}%')
-        
         print()
-    
     print(f"Training completed! Best validation accuracy: {best_val_acc:.2f}%")
     return history, best_model_path
 
@@ -145,7 +143,7 @@ def setup_training_pipeline():
         'batch_size': 32,
         'num_epochs': 50,
         'learning_rate': 0.001,
-        'device': 'mps' if torch.mps.is_available() else 'cpu'
+        'device': 'mps' if torch.backends.mps.is_available() else 'cpu'
     }
     
     logger.info(f"Device: {config['device']}")
@@ -169,8 +167,7 @@ def setup_training_pipeline():
     
     # Step 4: Start training
     logger.info("Step 4: Ready to start training!")
-    train_model(model, train_loader, val_loader)
-
+    train_model(model, train_loader, val_loader, num_epochs=config['num_epochs'], learning_rate=float(config['learning_rate']))
     logger.info("Training Complete")
     
     return config
