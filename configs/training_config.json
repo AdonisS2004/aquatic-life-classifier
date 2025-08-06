@@ -1,6 +1,6 @@
 {
     "batch_size": 32,
-    "num_epochs": 50,
-    "learning_rate": 0.00250,
+    "num_epochs": 100,
+    "learning_rate": 0.001,
     "device": "mps"
 }

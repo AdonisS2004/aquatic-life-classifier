@@ -1,0 +1,15 @@
+08/06/2025 10:30:11 AM function process_data called with args '/Users/adonisserrano/Documents/GitHub/aquatic-life-classifier/data/raw', '/Users/adonisserrano/Documents/GitHub/aquatic-life-classifier/data/processed'
+08/06/2025 10:30:11 AM Processing raw data
+08/06/2025 10:30:19 AM Finished Processing raw data
+08/06/2025 10:30:19 AM function process_data finished with execution time 7.986760375000001
+08/06/2025 10:30:19 AM Device: mps
+08/06/2025 10:30:19 AM Batch size: 32
+08/06/2025 10:30:19 AM Learning rate: 0.001
+08/06/2025 10:30:26 AM Training samples: 9588
+08/06/2025 10:30:26 AM Validation samples: 2046
+08/06/2025 10:30:26 AM Testing samples: 2077
+08/06/2025 10:30:26 AM Step 5: Train Model
+08/06/2025 10:30:26 AM Model moved to GPU
+08/06/2025 10:30:26 AM Step 5: SUCCESS
+08/06/2025 10:30:26 AM Step 6: Train Model
+08/06/2025 12:55:48 PM Step 6: SUCCESS
