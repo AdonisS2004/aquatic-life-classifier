@@ -1,0 +1,4 @@
+08/05/2025 12:53:53 PM function process_data called with args '/Users/adonisserrano/Documents/GitHub/aquatic-life-classifier/data/raw', '/Users/adonisserrano/Documents/GitHub/aquatic-life-classifier/data/processed'
+08/05/2025 12:53:53 PM Processing raw data
+08/05/2025 12:54:33 PM Finished Processing raw data
+08/05/2025 12:54:33 PM function process_data finished with execution time 39.729803917

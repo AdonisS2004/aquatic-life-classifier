@@ -4,10 +4,11 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import matplotlib.pyplot as plt
-from ..utils.management.decorators import (
+import numpy as np
+from ..utils.decorators import (
     log
 )
-from ..utils.management.file_manager import(
+from ..utils.file_manager import(
     get_git_project_root,
 )
 from .utils.data_helpers import (
@@ -31,19 +32,42 @@ logger = logging.getLogger(__name__)
 #   Functions   #  
 #################
 
-# @log(include_timer=True)
-def train_model(model, train_loader, val_loader, num_epochs=50, learning_rate=0.001, device='mps'):
+def mixup_data(x, y, alpha=0.2):
     """
-    Complete training pipeline
+    Mixup augmentation for better generalization
+    """
+    if alpha > 0:
+        lam = np.random.beta(alpha, alpha)
+    else:
+        lam = 1
+
+    batch_size = x.size()[0]
+    index = torch.randperm(batch_size).to(x.device)
+
+    mixed_x = lam * x + (1 - lam) * x[index, :]
+    y_a, y_b = y, y[index]
+    return mixed_x, y_a, y_b, lam
+
+def mixup_criterion(criterion, pred, y_a, y_b, lam):
+    """
+    Mixup loss function
+    """
+    return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
+
+def train_model(model, train_loader, val_loader, num_epochs=50, learning_rate=0.001, device='mps', 
+                weight_decay=0.0001, scheduler_patience=10, scheduler_factor=0.5, 
+                early_stopping_patience=20, use_mixup=True, mixup_alpha=0.2):
+    """
+    Complete training pipeline with advanced techniques
     """
     
     # Loss function and optimizer
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=float(learning_rate), weight_decay=1e-4)
+    optimizer = optim.AdamW(model.parameters(), lr=float(learning_rate), weight_decay=weight_decay)
     
     # Learning rate scheduler
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='max', factor=0.5, patience=5, verbose=True
+        optimizer, mode='max', factor=scheduler_factor, patience=scheduler_patience, verbose=True
     )
     
     # Training history
@@ -54,14 +78,19 @@ def train_model(model, train_loader, val_loader, num_epochs=50, learning_rate=0.
     
     best_val_acc = 0.0
     best_model_path = 'models/best_model.pth'
+    patience_counter = 0
     
     print("Starting training...")
+    print("="*50)
+    print(f"Using Mixup: {use_mixup}")
+    print(f"Early stopping patience: {early_stopping_patience}")
     print("="*50)
     
     for epoch in range(1, num_epochs + 1):
         # Training
         train_loss, train_acc = train_epoch(
-            model, train_loader, criterion, optimizer, device, epoch
+            model, train_loader, criterion, optimizer, device, epoch, 
+            use_mixup=use_mixup, mixup_alpha=mixup_alpha
         )
         
         # Validation
@@ -86,6 +115,7 @@ def train_model(model, train_loader, val_loader, num_epochs=50, learning_rate=0.
         # Save best model
         if val_acc > best_val_acc:
             best_val_acc = val_acc
+            patience_counter = 0
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
@@ -94,7 +124,16 @@ def train_model(model, train_loader, val_loader, num_epochs=50, learning_rate=0.
                 'history': history
             }, best_model_path)
             print(f'New best model saved! Val Acc: {val_acc:.2f}%')
+        else:
+            patience_counter += 1
+            
+        # Early stopping
+        if patience_counter >= early_stopping_patience:
+            print(f'Early stopping triggered after {epoch} epochs')
+            break
+            
         print()
+    
     print(f"Training completed! Best validation accuracy: {best_val_acc:.2f}%")
     return history, best_model_path
 
@@ -126,49 +165,3 @@ def plot_training_history(history, save_path='training_history.png'):
     plt.tight_layout()
     plt.savefig(save_path, dpi=150, bbox_inches='tight')
     plt.show()
-
-@log(include_timer=True)
-def setup_training_pipeline():
-    """
-    Complete setup example for your sea life dataset
-    """
-    
-    print("Aquatic Life CNN Training Pipeline Setup")
-    print("="*50)
-    
-    # Configuration
-    config = {
-        'source_data_dir': os.path.join(ROOT,'data','processed'),  # Your original species folders
-        'split_data_dir': os.path.join(ROOT,'data','splits'),  # Where to create train/val/test
-        'batch_size': 32,
-        'num_epochs': 50,
-        'learning_rate': 0.001,
-        'device': 'mps' if torch.backends.mps.is_available() else 'cpu'
-    }
-    
-    logger.info(f"Device: {config['device']}")
-    logger.info(f"Batch size: {config['batch_size']}")
-    logger.info(f"Learning rate: {config['learning_rate']}")
-    
-    # Step 1: Create data splits (run once)
-    logger.info("Step 1: Creating data splits...")
-    create_data_splits(config['source_data_dir'], config['split_data_dir'])
-    
-    # Step 2: Create data loaders
-    logger.info("Step 2: Creating data loaders...")
-    train_loader, val_loader, test_loader, class_to_idx = create_data_loaders(
-        config['split_data_dir'], 
-        batch_size=config['batch_size']
-    )
-    
-    # Step 3: Initialize model
-    logger.info("Step 3: Initializing model...")
-    model = cnn.create_model(num_classes=46, device=config['device'])
-    
-    # Step 4: Start training
-    logger.info("Step 4: Ready to start training!")
-    train_model(model, train_loader, val_loader, num_epochs=config['num_epochs'], learning_rate=float(config['learning_rate']))
-    logger.info("Training Complete")
-    
-    return config
-
