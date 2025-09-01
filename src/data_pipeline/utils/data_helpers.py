@@ -1,7 +1,7 @@
 import torch
 from torchvision import transforms
 from ...utils.file_manager import iter_files_in_folder
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
 from tqdm import tqdm
 
 import os
@@ -10,6 +10,8 @@ import random
 import shutil
 import json
 from PIL import Image
+import numpy as np
+from collections import Counter
 
 #################
 #   Variables   #
@@ -100,6 +102,28 @@ class AquaticLifeDataset(Dataset):
 #################
 #   Functions   #  
 #################
+
+def mixup_data(x, y, alpha=0.2):
+    """
+    Mixup augmentation for better generalization
+    """
+    if alpha > 0:
+        lam = np.random.beta(alpha, alpha)
+    else:
+        lam = 1
+
+    batch_size = x.size()[0]
+    index = torch.randperm(batch_size).to(x.device)
+
+    mixed_x = lam * x + (1 - lam) * x[index, :]
+    y_a, y_b = y, y[index]
+    return mixed_x, y_a, y_b, lam
+
+def mixup_criterion(criterion, pred, y_a, y_b, lam):
+    """
+    Mixup loss function
+    """
+    return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
 
 def get_labels(path: str) -> tuple[int, list[str]]:
     """ Get the name of the species. Each name will be (source_label)
@@ -193,7 +217,7 @@ def create_data_splits(source:str, target:str, train_ratio:float = 0.7, val_rati
     print(f"\nSplit information saved to: {os.path.join(target,'split_info.json')}")
     return split_info  
 
-def create_data_loaders(data_dir:str, batch_size:int=32, num_workers:int=4) -> tuple[DataLoader, DataLoader, DataLoader, dict]:
+def create_data_loaders(data_dir:str, batch_size:int=32, num_workers:int=4, use_weighted_sampling:bool=True) -> tuple[DataLoader, DataLoader, DataLoader, dict]:
     """
     Create data loaders for training, validation, and testing
     """
@@ -219,14 +243,36 @@ def create_data_loaders(data_dir:str, batch_size:int=32, num_workers:int=4) -> t
         'test',
     )
     
-    # Create data loaders
-    train_loader = DataLoader(
-        train_dataset,
-        batch_size=batch_size,
-        shuffle=True,
-        num_workers=num_workers,
-        pin_memory=True  # Faster GPU transfer
-    )
+    # Handle class imbalance with weighted sampling
+    if use_weighted_sampling:
+        # Calculate class weights
+        class_counts = Counter(train_dataset.image_labels)
+        total_samples = len(train_dataset.image_labels)
+        class_weights = {cls: total_samples / (len(class_counts) * count) for cls, count in class_counts.items()}
+        
+        # Create sample weights
+        sample_weights = [class_weights[label] for label in train_dataset.image_labels]
+        sampler = WeightedRandomSampler(
+            weights=sample_weights,
+            num_samples=len(sample_weights),
+            replacement=True
+        )
+        
+        train_loader = DataLoader(
+            train_dataset,
+            batch_size=batch_size,
+            sampler=sampler,  # Use weighted sampler instead of shuffle
+            num_workers=num_workers,
+            pin_memory=True
+        )
+    else:
+        train_loader = DataLoader(
+            train_dataset,
+            batch_size=batch_size,
+            shuffle=True,
+            num_workers=num_workers,
+            pin_memory=True
+        )
     
     val_loader = DataLoader(
         val_dataset,
@@ -248,6 +294,10 @@ def create_data_loaders(data_dir:str, batch_size:int=32, num_workers:int=4) -> t
     logger.info(f"Validation samples: {len(val_dataset)}")
     logger.info(f"Testing samples: {len(test_dataset)}")
     
+    if use_weighted_sampling:
+        logger.info(f"Using weighted sampling to handle class imbalance")
+        logger.info(f"Class distribution: {dict(class_counts)}")
+    
     return train_loader, val_loader, test_loader, train_dataset.class_to_index
 
 def create_data_transforms():
@@ -257,28 +307,33 @@ def create_data_transforms():
     Return:
         training_transformer and validation_transformer
     """
-    # Training transforms with augmentation
+    # Training transforms with enhanced augmentation for underwater images
     train_transforms = transforms.Compose([
         transforms.Resize((256, 256)),  # Slightly larger than target
         transforms.RandomCrop(224),     # Random crop to 224x224
         transforms.RandomHorizontalFlip(p=0.5),  # Fish can face either direction
-        transforms.RandomRotation(degrees=15),    # Slight rotation
+        transforms.RandomVerticalFlip(p=0.3),    # Some underwater creatures can be upside down
+        transforms.RandomRotation(degrees=30),    # More rotation for underwater variability
         transforms.ColorJitter(
-            brightness=0.2,    # Underwater lighting varies
-            contrast=0.2,      # Different water clarity
-            saturation=0.2,    # Color variation underwater
-            hue=0.1           # Slight color shifts
+            brightness=0.3,    # Underwater lighting varies significantly
+            contrast=0.3,      # Different water clarity affects contrast
+            saturation=0.3,    # Color variation underwater
+            hue=0.2           # Color shifts due to water depth
         ),
         transforms.RandomAffine(
             degrees=0,
-            scale=(0.9, 1.1),  # Slight zoom in/out
-            shear=5            # Small perspective changes
+            scale=(0.8, 1.2),  # More zoom variation
+            shear=10,          # Perspective changes
+            translate=(0.1, 0.1)  # Slight translation
         ),
+        transforms.RandomPerspective(distortion_scale=0.2, p=0.5),  # Perspective distortion
+        transforms.RandomGrayscale(p=0.1),  # Some underwater images might be grayscale
         transforms.ToTensor(),
         transforms.Normalize(
             mean=[0.485, 0.456, 0.406],  # ImageNet normalization
             std=[0.229, 0.224, 0.225]
-        )
+        ),
+        transforms.RandomErasing(p=0.2, scale=(0.02, 0.2))  # Simulate occlusions
     ])
 
     # Validation/test transforms (no augmentation)
@@ -293,9 +348,9 @@ def create_data_transforms():
     
     return train_transforms, val_transforms
 
-def train_epoch(model, train_loader, criterion, optimizer, device, epoch):
+def train_epoch(model, train_loader, criterion, optimizer, device, epoch, use_mixup=False, mixup_alpha=0.2):
     """
-    Train model for one epoch
+    Train model for one epoch with optional mixup augmentation
     """
     model.train()
     running_loss = 0.0
@@ -306,19 +361,43 @@ def train_epoch(model, train_loader, criterion, optimizer, device, epoch):
     
     for batch_idx, (images, labels) in enumerate(progress_bar):
         images, labels = images.to(device), labels.to(device)
+        
+        # Apply mixup if enabled
+        if use_mixup:
+            images, labels_a, labels_b, lam = mixup_data(images, labels, mixup_alpha)
+        
         # Zero gradients
         optimizer.zero_grad()
+        
         # Forward pass
         outputs = model(images)
-        loss = criterion(outputs, labels)
+        
+        # Calculate loss
+        if use_mixup:
+            loss = mixup_criterion(criterion, outputs, labels_a, labels_b, lam)
+        else:
+            loss = criterion(outputs, labels)
+        
         # Backward pass
         loss.backward()
+        
+        # Gradient clipping
+        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+        
         optimizer.step()
+        
         # Statistics
         running_loss += loss.item()
         _, predicted = torch.max(outputs.data, 1)
         total_samples += labels.size(0)
-        correct_predictions += (predicted == labels).sum().item()
+        
+        if use_mixup:
+            # For mixup, we need to handle the mixed labels
+            correct_predictions += (lam * (predicted == labels_a).sum().float() + 
+                                  (1 - lam) * (predicted == labels_b).sum().float()).item()
+        else:
+            correct_predictions += (predicted == labels).sum().item()
+        
         # Update progress bar
         accuracy = 100 * correct_predictions / total_samples
         progress_bar.set_postfix({

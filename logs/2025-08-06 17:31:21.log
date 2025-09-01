@@ -1,0 +1,20 @@
+08/06/2025 05:31:21 PM function process_data called with args '/Users/adonisserrano/Documents/GitHub/aquatic-life-classifier/data/raw', '/Users/adonisserrano/Documents/GitHub/aquatic-life-classifier/data/processed'
+08/06/2025 05:31:21 PM Processing raw data
+08/06/2025 05:31:30 PM Finished Processing raw data
+08/06/2025 05:31:30 PM function process_data finished with execution time 8.480328709000002
+08/06/2025 05:31:30 PM Device: mps
+08/06/2025 05:31:30 PM Batch size: 16
+08/06/2025 05:31:30 PM Learning rate: 0.0001
+08/06/2025 05:31:30 PM Weight decay: 0.0001
+08/06/2025 05:31:30 PM Using weighted sampling: True
+08/06/2025 05:31:30 PM Using mixup: True
+08/06/2025 05:31:37 PM Training samples: 9588
+08/06/2025 05:31:37 PM Validation samples: 2046
+08/06/2025 05:31:37 PM Testing samples: 2077
+08/06/2025 05:31:37 PM Using weighted sampling to handle class imbalance
+08/06/2025 05:31:37 PM Class distribution: {0: 347, 1: 350, 2: 349, 3: 547, 4: 347, 5: 345, 6: 591, 7: 349, 8: 350, 9: 393, 10: 350, 11: 337, 12: 371, 13: 361, 14: 405, 15: 334, 16: 289, 17: 413, 18: 341, 19: 338, 20: 349, 21: 1332, 22: 400}
+08/06/2025 05:31:37 PM Step 5: Initialize Model
+08/06/2025 05:31:37 PM Model moved to GPU
+08/06/2025 05:31:37 PM Step 5: SUCCESS
+08/06/2025 05:31:37 PM Step 6: Train Model
+08/07/2025 01:32:11 AM Step 6: SUCCESS

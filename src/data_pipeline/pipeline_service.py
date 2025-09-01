@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import matplotlib.pyplot as plt
+import numpy as np
 from ..utils.decorators import (
     log
 )
@@ -31,18 +32,42 @@ logger = logging.getLogger(__name__)
 #   Functions   #  
 #################
 
-def train_model(model, train_loader, val_loader, num_epochs=50, learning_rate=0.001, device='mps'):
+def mixup_data(x, y, alpha=0.2):
     """
-    Complete training pipeline
+    Mixup augmentation for better generalization
+    """
+    if alpha > 0:
+        lam = np.random.beta(alpha, alpha)
+    else:
+        lam = 1
+
+    batch_size = x.size()[0]
+    index = torch.randperm(batch_size).to(x.device)
+
+    mixed_x = lam * x + (1 - lam) * x[index, :]
+    y_a, y_b = y, y[index]
+    return mixed_x, y_a, y_b, lam
+
+def mixup_criterion(criterion, pred, y_a, y_b, lam):
+    """
+    Mixup loss function
+    """
+    return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
+
+def train_model(model, train_loader, val_loader, num_epochs=50, learning_rate=0.001, device='mps', 
+                weight_decay=0.0001, scheduler_patience=10, scheduler_factor=0.5, 
+                early_stopping_patience=20, use_mixup=True, mixup_alpha=0.2):
+    """
+    Complete training pipeline with advanced techniques
     """
     
     # Loss function and optimizer
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=float(learning_rate), weight_decay=1e-4)
+    optimizer = optim.AdamW(model.parameters(), lr=float(learning_rate), weight_decay=weight_decay)
     
     # Learning rate scheduler
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='max', factor=0.5, patience=5, verbose=True
+        optimizer, mode='max', factor=scheduler_factor, patience=scheduler_patience, verbose=True
     )
     
     # Training history
@@ -53,14 +78,19 @@ def train_model(model, train_loader, val_loader, num_epochs=50, learning_rate=0.
     
     best_val_acc = 0.0
     best_model_path = 'models/best_model.pth'
+    patience_counter = 0
     
     print("Starting training...")
+    print("="*50)
+    print(f"Using Mixup: {use_mixup}")
+    print(f"Early stopping patience: {early_stopping_patience}")
     print("="*50)
     
     for epoch in range(1, num_epochs + 1):
         # Training
         train_loss, train_acc = train_epoch(
-            model, train_loader, criterion, optimizer, device, epoch
+            model, train_loader, criterion, optimizer, device, epoch, 
+            use_mixup=use_mixup, mixup_alpha=mixup_alpha
         )
         
         # Validation
@@ -85,6 +115,7 @@ def train_model(model, train_loader, val_loader, num_epochs=50, learning_rate=0.
         # Save best model
         if val_acc > best_val_acc:
             best_val_acc = val_acc
+            patience_counter = 0
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
@@ -93,7 +124,16 @@ def train_model(model, train_loader, val_loader, num_epochs=50, learning_rate=0.
                 'history': history
             }, best_model_path)
             print(f'New best model saved! Val Acc: {val_acc:.2f}%')
+        else:
+            patience_counter += 1
+            
+        # Early stopping
+        if patience_counter >= early_stopping_patience:
+            print(f'Early stopping triggered after {epoch} epochs')
+            break
+            
         print()
+    
     print(f"Training completed! Best validation accuracy: {best_val_acc:.2f}%")
     return history, best_model_path
 
