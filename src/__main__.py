@@ -9,13 +9,12 @@ from .data_classifier.cnn import (
     create_model,
 )
 from .data_processor.data_service import (
-    generate_data,
-    process_data,
+    DataService
 )
 from .data_pipeline.pipeline_service import (
-    create_data_splits,
-    create_data_loaders,
-    train_model,
+   PipelineService,
+   create_data_splits,
+   create_data_loaders
 )
 from .utils.file_manager import (
     import_json_to_dict
@@ -59,12 +58,14 @@ def main() -> None:
     training_config = import_json_to_dict(TRAINING_CONFIG)
     source_data_dir = os.path.join(ROOT,'data','processed')
     split_data_dir = os.path.join(ROOT,'data','splits')
+    dataService = DataService()
+    pipelineService = PipelineService()
 
     # Step 1: Generate data 
-    # generate_data(ROOT, DATA_CONFIG)
+    dataService.generate_data(ROOT, DATA_CONFIG)
 
     # Step 2: Process the Data
-    process_data(path_to_raw, path_to_processed)
+    dataService.process_data(path_to_raw, path_to_processed)
 
     # Step 3: Split Data
     logger.info(f"Device: {training_config['device']}")
@@ -89,7 +90,7 @@ def main() -> None:
 
     # Step 6: Train Model
     logger.info("Step 6: Train Model")
-    train_model(
+    pipelineService.train_model(
         model, 
         train_loader, 
         val_loader, 
